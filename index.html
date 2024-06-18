@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+   <title id="pageTitle">Lua RCE</title>
+   <style>
+      @font-face {
+         font-family: 'Minecraftia';
+         src: url('Minecraftia-Regular.ttf') format('truetype');
+         font-weight: normal;
+         font-style: normal;
+      }
+
+      body {
+         font-family: 'Minecraftia', Arial, sans-serif;
+         background-color: #1e1e1e;
+         color: #ddd;
+         margin: 0;
+         padding: 20px;
+         background-size: cover;
+         background-position: center;
+         background-repeat: no-repeat;
+      }
+
+      .header {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         margin-bottom: 20px;
+      }
+
+      .header h1 {
+         color: #bbb;
+         margin: 0;
+         font-size: 24px;
+      }
+
+      .menu {
+         display: flex;
+         align-items: center;
+      }
+
+      .menu-item {
+         cursor: pointer;
+         margin-right: 15px;
+      }
+
+      .menu-item:hover {
+         text-decoration: underline;
+      }
+
+      .theme-buttons {
+         display: none;
+         position: absolute;
+         top: 50px;
+         left: 0;
+         background-color: rgba(51, 51, 51, 0.9);
+         padding: 10px;
+         border: 1px solid #555;
+         z-index: 1;
+         border-radius: 5px;
+         user-select: none;
+         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .theme-buttons button {
+         display: block;
+         width: 100%;
+         padding: 8px;
+         margin-bottom: 5px;
+         background-color: #444;
+         color: #ddd;
+         border: none;
+         cursor: pointer;
+         transition: background-color 0.3s, border-radius 0.3s;
+         border-radius: 8px;
+      }
+
+      .theme-buttons button:hover {
+         background-color: #555;
+      }
+
+      .settings {
+         display: none;
+         position: absolute;
+         top: 50px;
+         left: 0;
+         background-color: rgba(51, 51, 51, 0.9);
+         padding: 10px;
+         border: 1px solid #555;
+         z-index: 1;
+         border-radius: 5px;
+         user-select: none;
+         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .settings label {
+         color: #ccc;
+         display: block;
+         margin-bottom: 5px;
+      }
+
+      .settings input[type="text"],
+      .settings input[type="range"] {
+         width: calc(100% - 20px);
+         padding: 8px;
+         font-size: 14px;
+         border: 1px solid #555;
+         background-color: #444;
+         color: #ddd;
+         margin-bottom: 10px;
+         border-radius: 8px;
+      }
+
+      .settings button {
+         width: 100%;
+         padding: 8px;
+         background-color: #444;
+         color: #ddd;
+         border: none;
+         cursor: pointer;
+         transition: background-color 0.3s, border-radius 0.3s;
+         border-radius: 8px;
+         margin-top: 5px;
+      }
+
+      .settings button:hover {
+         background-color: #555;
+      }
+
+      .draggable {
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 20px;
+         cursor: move;
+      }
+
+      .draggable .close-button {
+         position: absolute;
+         top: 0;
+         right: 0;
+         width: 20px;
+         height: 20px;
+         background-color: #ff3b3b;
+         color: #fff;
+         border: none;
+         cursor: pointer;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         font-size: 14px;
+         border-top-right-radius: 5px;
+      }
+
+      textarea {
+         width: 100%;
+         padding: 10px;
+         font-size: 14px;
+         border: 1px solid #333;
+         background-color: rgba(51, 51, 51, 0.9);
+         color: #ddd;
+         resize: vertical;
+         min-height: 150px;
+         background-size: cover;
+         background-repeat: no-repeat;
+         background-position: center;
+         font-family: 'Minecraftia', Arial, sans-serif;
+         transition: background-color 0.3s;
+         border-radius: 8px;
+      }
+
+      button {
+         padding: 10px 20px;
+         margin-top: 10px;
+         background-color: #444;
+         color: #ddd;
+         border: none;
+         cursor: pointer;
+         transition: background-color 0.3s, border-radius 0.3s;
+         border-radius: 8px;
+      }
+
+      button:hover {
+         background-color: #555;
+      }
+   </style>
+</head>
+
+<body>
+   <div class="header">
+      <h1 id="headerText">Lua RCE</h1>
+      <div class="menu">
+         <div class="menu-item" onclick="toggleElement('themeMenu')">Themes &#9776;</div>
+         <div class="menu-item" onclick="toggleElement('settings')">Settings &#9776;</div>
+         <div class="menu-item">
+            <label for="fileInput">Open File</label>
+            <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(event)">
+         </div>
+         <div class="menu-item" onclick="toggleHeaderText()">Toggle Header</div>
+      </div>
+   </div>
+
+   <div class="theme-buttons" id="themeMenu">
+      <div class="draggable">
+         Themes
+         <button class="close-button" onclick="hideElement('themeMenu')">X</button>
+      </div>
+      <button onclick="changeTheme('dark')">Dark Theme</button>
+      <button onclick="changeTheme('light')">Light Theme</button>
+      <button onclick="changeTheme('blue')">Blue Theme</button>
+      <button onclick="changeTheme('green')">Green Theme</button>
+   </div>
+
+   <div class="settings" id="settings">
+      <div class="draggable">
+         Settings
+         <button class="close-button" onclick="hideElement('settings')">X</button>
+      </div>
+      <label for="customTitle">Custom Title:</label>
+      <input type="text" id="customTitle" placeholder="Enter custom title...">
+      <button onclick="setCustomTitle()">Set Title</button>
+      <label for="bodyBackgroundImage">Body Background Image URL:</label>
+      <input type="text" id="bodyBackgroundImage" placeholder="Enter body background image URL...">
+      <button onclick="setBodyBackground()">Set Body Background</button>
+      <label for="textareaBackgroundImage">Textarea Background Image URL:</label>
+      <input type="text" id="textareaBackgroundImage" placeholder="Enter textarea background image URL...">
+      <button onclick="setTextareaBackground()">Set Textarea Background</button>
+      <label for="textareaOpacity">Textarea Opacity:</label>
+      <input type="range" id="textareaOpacity" min="0" max="1" step="0.1" value="1" oninput="changeTextareaOpacity(this.value)">
+      <label for="buttonOpacity">Button Opacity:</label>
+      <input type="range" id="buttonOpacity" min="0" max="1" step="0.1" value="1" oninput="changeButtonOpacity(this.value)">
+      <label for="buttonTransparency">Button Transparency:</label>
+      <input type="range" id="buttonTransparency" min="0" max="1" step="0.1" value="1" oninput="changeButtonTransparency(this.value)">
+   </div>
+
+   <label for="luaCode">Enter Lua Code:</label><br>
+   <textarea id="luaCode" name="luaCode" placeholder="Enter your Lua code here..."></textarea><br><br>
+
+   <button onclick="run()">Run Code</button>
+   <button onclick="clearCode()">Clear Code</button>
+
+   <script>
+      function run() {
+         var luaCode = document.getElementById('luaCode').value;
+         console.log('Lua Code:', luaCode);
+         var url = 'https://rare-marci-zincution-5f436632.koyeb.app/code';
+
+         fetch(url, {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ luaCode }),
+         })
+            .then(response => {
+               if (!response.ok) {
+                  throw new Error('Network response was not ok');
+               }
+               return response.json();
+            })
+            .then(data => {
+               console.log('Success:', data);
+            })
+            .catch((error) => {
+               console.error('Error:', error);
+            });
+      }
+
+      function clearCode() {
+         document.getElementById('luaCode').value = "";
+      }
+
+      function toggleElement(id) {
+         var element = document.getElementById(id);
+         if (element.style.display === 'block') {
+            element.style.display = 'none';
+         } else {
+            element.style.display = 'block';
+         }
+      }
+
+      function changeTheme(theme) {
+         var body = document.body;
+         var header = document.getElementById('headerText');
+         var pageTitle = document.getElementById('pageTitle');
+         switch (theme) {
+            case 'dark':
+               body.style.backgroundColor = '#1e1e1e';
+               body.style.color = '#ddd';
+               header.style.color = '#bbb';
+               pageTitle.innerText = 'Lua RCE';
+               break;
+            case 'light':
+               body.style.backgroundColor = '#f5f5f5';
+               body.style.color = '#333';
+               header.style.color = '#555';
+               pageTitle.innerText = 'Lua RCE';
+               break;
+            case 'blue':
+               body.style.backgroundColor = '#1a73e8';
+               body.style.color = '#fff';
+               header.style.color = '#ccc';
+               pageTitle.innerText = 'Lua RCE';
+               break;
+            case 'green':
+               body.style.backgroundColor = '#4caf50';
+               body.style.color = '#fff';
+               header.style.color = '#ccc';
+               pageTitle.innerText = 'Lua RCE';
+               break;
+         }
+         hideElement('themeMenu');
+      }
+
+      function setBodyBackground() {
+         var imageUrl = document.getElementById('bodyBackgroundImage').value;
+         document.body.style.backgroundImage = `url(${imageUrl})`;
+         hideElement('settings');
+      }
+
+      function setTextareaBackground() {
+         var imageUrl = document.getElementById('textareaBackgroundImage').value;
+         document.getElementById('luaCode').style.backgroundImage = `url(${imageUrl})`;
+         hideElement('settings');
+      }
+
+      function changeTextareaOpacity(opacity) {
+         var textarea = document.getElementById('luaCode');
+         textarea.style.backgroundColor = `rgba(51, 51, 51, ${opacity})`;
+      }
+
+      function changeButtonOpacity(opacity) {
+         var buttons = document.getElementsByTagName('button');
+         for (var i = 0; i < buttons.length; i++) {
+            buttons[i].style.opacity = opacity;
+         }
+      }
+
+      function changeButtonTransparency(transparency) {
+         var buttons = document.getElementsByTagName('button');
+         for (var i = 0; i < buttons.length; i++) {
+            buttons[i].style.backgroundColor = `rgba(68, 68, 68, ${transparency})`;
+         }
+      }
+
+      function handleFileSelect(event) {
+         const reader = new FileReader();
+         reader.onload = function () {
+            document.getElementById('luaCode').value = reader.result;
+         };
+         reader.readAsText(event.target.files[0]);
+      }
+
+      function toggleHeaderText() {
+         var header = document.getElementById('headerText');
+         if (header.style.display === 'none') {
+            header.style.display = 'block';
+         } else {
+            header.style.display = 'none';
+         }
+      }
+
+      function setCustomTitle() {
+         var customTitle = document.getElementById('customTitle').value;
+         document.getElementById('pageTitle').innerText = customTitle;
+      }
+   </script>
+</body>
+
+</html>
